@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreenKassePOC", "GreenKassePOC.csproj", "{BE5111C1-C756-4E21-AA69-37B430388C65}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreenKasse.Setup", "GreenKasse.Setup\GreenKasse.Setup.csproj", "{7B66AED4-AE29-4BBE-97DF-3F0DAD64834E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreenKasse.Updater", "GreenKasse.Updater\GreenKasse.Updater.csproj", "{2724F921-2C5A-4F7E-AE50-FEB1CBD3ED57}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BE5111C1-C756-4E21-AA69-37B430388C65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE5111C1-C756-4E21-AA69-37B430388C65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE5111C1-C756-4E21-AA69-37B430388C65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE5111C1-C756-4E21-AA69-37B430388C65}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B66AED4-AE29-4BBE-97DF-3F0DAD64834E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B66AED4-AE29-4BBE-97DF-3F0DAD64834E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B66AED4-AE29-4BBE-97DF-3F0DAD64834E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B66AED4-AE29-4BBE-97DF-3F0DAD64834E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2724F921-2C5A-4F7E-AE50-FEB1CBD3ED57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2724F921-2C5A-4F7E-AE50-FEB1CBD3ED57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2724F921-2C5A-4F7E-AE50-FEB1CBD3ED57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2724F921-2C5A-4F7E-AE50-FEB1CBD3ED57}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

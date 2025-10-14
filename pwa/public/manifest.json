@@ -1,0 +1,7 @@
+{
+  "name": "greenKasse",
+  "display": "standalone",
+  "permissions": [
+    "window-management"
+  ]
+}

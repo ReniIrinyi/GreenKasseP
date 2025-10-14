@@ -1,0 +1,57 @@
+@import './quasar.variables.scss';
+
+//for Designideen/Farbschema siehe => www.greensys.ch
+:root {
+  --black: #000000;
+  --white: #ffffff;
+  --primary: #21645f;
+  --secondary: #629080;
+  --tertiary: #98c4a5;
+  --quaternary: #628879;
+  --dark-gray: #8e929b;
+  --light-gray: #edf2f1;
+  --filler: #99c5a5;
+}
+
+$primary: var(--primary);
+$secondary: var(--secondary);
+$accent: var(--quaternary);
+$positive: var(--tertiary);
+$info: var(--dark-gray);
+
+body, .q-page {
+  background: var(--gs-bg);
+}
+
+.q-header, .q-toolbar {
+  background: var(--gs-header-grad);
+  color: #fff;
+}
+
+.q-toolbar__title {
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
+.q-btn {
+  border-radius: $button-border-radius;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.q-card {
+  border-radius: $generic-border-radius;
+}
+
+.category-grid .category-btn {
+  background: var(--gs-tile-bg) !important;
+  border: 1px solid var(--gs-tile-border);
+}
+
+.category-grid .category-btn:hover {
+  filter: brightness(0.98);
+}
+
+.bottom-actions .q-btn {
+  border-radius: 10px;
+}

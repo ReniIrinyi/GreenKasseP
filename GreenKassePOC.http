@@ -1,0 +1,6 @@
+@GreenKassePOC_HostAddress = http://localhost:5269
+
+GET {{GreenKassePOC_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

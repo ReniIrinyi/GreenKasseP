@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+    <PackageReference Include="MySqlConnector" Version="2.4.0" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.9" />
+    <PackageReference Include="System.IO.Ports" Version="9.0.0" />
+    <PackageReference Include="System.Management" Version="9.0.9" />
+  </ItemGroup>
+
+  <!-- Debug PWA =>  wwwroot /Hosting "Embedded" -->
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' AND Exists('$(ProjectDir)..\..\Client\dist\pwa')">
+    <Content Include="$(ProjectDir)..\..\Client\dist\pwa\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <Link>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+
+  <!-- Release /Hosting "External" -->
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <Content Remove="$(ProjectDir)..\..\Client\dist\pwa\**\*" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="GreenKasse.Setup\obj\GreenKasse.Setup.csproj.nuget.dgspec.json" />
+    <_ContentIncludedByDefault Remove="GreenKasse.Setup\obj\project.assets.json" />
+    <_ContentIncludedByDefault Remove="GreenKasse.Setup\obj\project.packagespec.json" />
+    <_ContentIncludedByDefault Remove="GreenKasse.Updater\appsettings.json" />
+    <_ContentIncludedByDefault Remove="GreenKasse.Updater\obj\GreenKasse.Updater.csproj.nuget.dgspec.json" />
+    <_ContentIncludedByDefault Remove="GreenKasse.Updater\obj\project.assets.json" />
+    <_ContentIncludedByDefault Remove="GreenKasse.Updater\obj\project.packagespec.json" />
+  </ItemGroup>
+
+</Project>
