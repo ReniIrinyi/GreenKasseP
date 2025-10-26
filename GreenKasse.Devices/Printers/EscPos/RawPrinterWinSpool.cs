@@ -57,7 +57,6 @@ public static class RawPrinterWinSpool
     private static string? TryGetDefaultPrinter()
     {
         int size = 0;
-        // első hívás a buffer méretéért
         GetDefaultPrinter(null!, ref size);
         if (size <= 0) return null;
 

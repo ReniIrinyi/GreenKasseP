@@ -16,7 +16,7 @@ public sealed class CashDrawerViaPrinter : ICashDrawer
     {
         var printer = _cfg["Devices:PrinterName"];
         if (string.IsNullOrWhiteSpace(printer))
-            throw new InvalidOperationException("Devices:PrinterName hiányzik.");
+            throw new InvalidOperationException("Devices:PrinterName nicht vorhanden.");
         RawPrinterWinSpool.SendOrThrow(printer, new byte[] { 0x1B, 0x70, 0x00, 100, 100 });
     }
 }

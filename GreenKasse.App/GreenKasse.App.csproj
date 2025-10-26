@@ -4,6 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <Target Name="CopyPwaToWwwroot" BeforeTargets="Build;Publish" Condition="'$(Configuration)'=='Debug'">
@@ -31,15 +32,18 @@
 
   <ItemGroup>
     <!-- EF Core 9 + Pomelo 9 (MariaDB) -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9"/>
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
 
     <!-- ASP.NET / etc -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+    <PackageReference Include="MySqlConnector" Version="2.4.0" />
+
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.9" />
     <PackageReference Include="Scrutor" Version="6.1.0" />
 
     <!-- Windows/IO -->
