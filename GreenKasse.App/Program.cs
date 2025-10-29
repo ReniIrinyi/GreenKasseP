@@ -1,30 +1,43 @@
 using GreenKasse.App.Adapter.Database;
-using GreenKasse.App.Applikation.Services;
 using GreenKasse.Devices.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
-var projectRoot = builder.Environment.ContentRootPath;
-var solutionRoot = Directory.GetParent(projectRoot)!.FullName;
 
+var env = builder.Environment;
+var contentRoot = env.ContentRootPath;
+
+var cfgBase = File.Exists(Path.Combine(contentRoot, "appsettings.json"))
+    ? contentRoot
+    : Directory.GetParent(contentRoot)!.FullName;
 
 builder.Configuration
-    .AddJsonFile(Path.Combine(solutionRoot, "appsettings.json"), optional: false, reloadOnChange: true)
-    .AddJsonFile(Path.Combine(solutionRoot, $"appsettings.{builder.Environment.EnvironmentName}.json"), optional: true, reloadOnChange: true)
+    .AddJsonFile(Path.Combine(cfgBase, "appsettings.json"), optional: false, reloadOnChange: true)
+    .AddJsonFile(Path.Combine(cfgBase, $"appsettings.{env.EnvironmentName}.json"), optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
 var cfg = builder.Configuration;
-builder.Services.AddDevices(builder.Configuration);
-builder.Services.AddScoped<DrawerService>();
-var cs = builder.Configuration.GetConnectionString("MariaDb")!;
-var serverVersion = ServerVersion.Create(new Version(10, 11, 0), ServerType.MariaDb);
-builder.Services.AddDbContext<AppDbContext>(opt =>
-{
-    opt.UseMySql(cs, serverVersion);
-});
 
+// ---- PORT + URL bind ----
+var port = cfg.GetValue("Port", 8080);
+builder.WebHost.UseUrls($"http://+:{port}");
+
+// ---- WEBROOT  ----
+// "C:\\ProgramData\\GreenKasse\\wwwroot"
+var webRoot = cfg["WebRoot"];
+if (!string.IsNullOrWhiteSpace(webRoot) && Directory.Exists(webRoot))
+{
+    builder.WebHost.UseWebRoot(webRoot);
+}
+
+// ---- SERVICES / DI ----
+builder.Services.AddDevices(cfg);
+builder.Services.AddScoped<DrawerService>();
+
+var cs = cfg.GetConnectionString("MariaDb")!;
+var serverVersion = ServerVersion.Create(new Version(10, 11, 0), ServerType.MariaDb);
+builder.Services.AddDbContext<AppDbContext>(opt => opt.UseMySql(cs, serverVersion));
 
 builder.Services.AddCors(options =>
 {
@@ -41,15 +54,27 @@ builder.Services.Scan(s => s
     .WithSingletonLifetime());
 
 builder.Services.AddControllers();
+
 var app = builder.Build();
+
+app.Logger.LogInformation("ContentRoot : {cr}", app.Environment.ContentRootPath);
+app.Logger.LogInformation("WebRoot     : {wr}", app.Environment.WebRootPath);
+app.Logger.LogInformation("index.html? : {ok}",
+    File.Exists(Path.Combine(app.Environment.WebRootPath ?? "", "index.html")));
+app.Logger.LogInformation("Listening   : http://localhost:{port}/", port);
+
+app.MapGet("/ping", () => Results.Ok("pong"));
+
 app.UseCors("Dev");
-app.MapFallbackToFile("index.html");
-app.UseDefaultFiles();
-app.UseStaticFiles();
+
+app.UseDefaultFiles();   // index.html, default.htm
+app.UseStaticFiles();   
+
 app.MapControllers();
-var routeMappers = app.Services.GetRequiredService<IEnumerable<IController>>();
-foreach (var mapper in routeMappers)
-{
+
+app.MapFallbackToFile("index.html");
+
+foreach (var mapper in app.Services.GetRequiredService<IEnumerable<IController>>())
     mapper.Map(app);
-}
+
 await app.RunAsync();

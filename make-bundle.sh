@@ -71,14 +71,15 @@ fi
 
 # --- 0) Bundle-Struktur vorbereiten ---
 info "Vorbereitung BundleRoot: $BUNDLE_ROOT"
+info "Vorbereitung BundleRoot: $BUNDLE_ROOT"
 clean_dir "$BUNDLE_ROOT"
-ensure_dir "$BUNDLE_ROOT/app"
-ensure_dir "$BUNDLE_ROOT/app/pwa"          
-ensure_dir "$BUNDLE_ROOT/app/updater"
+ensure_dir "$BUNDLE_ROOT/pwa"
+ensure_dir "$BUNDLE_ROOT/updater"
 ensure_dir "$BUNDLE_ROOT/db/mariadb"
-ensure_dir "$BUNDLE_ROOT/db/data"          # leer lassen – init auf Zielsystem
+ensure_dir "$BUNDLE_ROOT/db/data"
 ensure_dir "$BUNDLE_ROOT/db/schemas"
 ensure_dir "$BUNDLE_ROOT/scripts"
+
 
 # --- 1) .NET Publish (win-x64, self-contained, single-file) ---
 info "dotnet publish ($RUNTIME_ID) - self-contained=$SELF_CONTAINED single-file=$SINGLE_FILE trimmed=$TRIMMED"
@@ -93,15 +94,16 @@ dotnet publish "$CSPROJ" \
   -o "$PUBDIR" || die "dotnet publish fehlgeschlagen."
 
 # Dateien uebernehmen
-cp -R "$PUBDIR"/. "$BUNDLE_ROOT/app/"
+cp -R "$PUBDIR"/. "$BUNDLE_ROOT/"
 
-# publizierte appsettings*.json entfernen, dann Root-appsettings reinkopieren
-find "$BUNDLE_ROOT/app" -maxdepth 1 -type f -name 'appsettings*.json' -print0 | xargs -0 -r rm -f
-cp "$APPSETTINGS_SRC" "$BUNDLE_ROOT/app/appsettings.json"
+find "$BUNDLE_ROOT" -maxdepth 1 -type f -name 'appsettings*.json' -print0 | xargs -0 -r rm -f
+
+cp "$APPSETTINGS_SRC" "$BUNDLE_ROOT/appsettings.json"
+
 
 # App ZIP 
 if [ "$MAKE_ZIPS" = true ]; then
-  (cd "$BUNDLE_ROOT" && zip -rq "App_${APP_VERSION}.zip" "app")
+(cd "$BUNDLE_ROOT" && zip -rq "App_${APP_VERSION}.zip" .)
   info "App ZIP erstellt: $BUNDLE_ROOT/App_${APP_VERSION}.zip"
 fi
 
@@ -110,7 +112,7 @@ if [ -f "$UPDATER_CSPROJ" ]; then
   info "Updater publish: $UPDATER_CSPROJ"
   UPD_PUBDIR="$(mktemp -d)"
   dotnet publish "$UPDATER_CSPROJ" -c Release -r "$RUNTIME_ID" --self-contained "$SELF_CONTAINED" -o "$UPD_PUBDIR"
-  cp -R "$UPD_PUBDIR"/. "$BUNDLE_ROOT/app/updater/"
+cp -R "$UPD_PUBDIR"/. "$BUNDLE_ROOT/updater/"
 else
   info "Updater-Projekt nicht gefunden (optional) - uebersprungen."
 fi
@@ -156,43 +158,50 @@ else
 fi
 
 # PWA ins Bundle uebernehmen
-cp -R "$PWA_DIST"/. "$BUNDLE_ROOT/app/pwa/"
+cp -R "$PWA_DIST"/. "$BUNDLE_ROOT/pwa/"
 
 # PWA ZIP (optional)
 if [ "$MAKE_ZIPS" = true ]; then
-  (cd "$BUNDLE_ROOT/app" && zip -rq "Pwa_${APP_VERSION}.zip" "pwa")
-  info "PWA ZIP erstellt: $BUNDLE_ROOT/app/Pwa_${APP_VERSION}.zip"
+  (cd "$BUNDLE_ROOT" && zip -rq "Pwa_${APP_VERSION}.zip" "pwa")
+  info "PWA ZIP erstellt: $BUNDLE_ROOT/Pwa_${APP_VERSION}.zip"
 fi
 
-# --- 3) MariaDB fuer Windows laden und pruefen ---
-info "MariaDB ${MARIADB_VERSION} (${MARIADB_ARCH}) wird heruntergeladen..."
+# --- 3) MariaDB für Windows laden und prüfen ---
+info "MariaDB herunterladen (LTS 10.6.23, winx64)…"
+MARIADB_VERSION="10.6.23"
+MARIADB_ARCH="winx64"
+MARIADB_FILENAME="mariadb-${MARIADB_VERSION}-${MARIADB_ARCH}.zip"
+MARIADB_BASEURL="https://archive.mariadb.org/mariadb-${MARIADB_VERSION}/${MARIADB_ARCH}-packages/"
+
 TMPDIR="$(mktemp -d)"
 ZIP_PATH="$TMPDIR/$MARIADB_FILENAME"
-SHA_PATH="$TMPDIR/$MARIADB_FILENAME.sha256"
-curl -fsSL "${MARIADB_BASEURL}${MARIADB_FILENAME}" -o "$ZIP_PATH"
+MD5_LIST="$TMPDIR/md5sums.txt"
 
-EXPECTED=""
-# Versuch A: per-file .sha256
-if curl -fsSL "${MARIADB_BASEURL}${MARIADB_FILENAME}.sha256" -o "$SHA_PATH"; then
-  EXPECTED="$(cut -d' ' -f1 "$SHA_PATH" | head -n1)"
-else
-  # Versuch B: sha256sums.txt
-  SHA_LIST="$TMPDIR/sha256sums.txt"
-  curl -fsSL "${MARIADB_BASEURL}sha256sums.txt" -o "$SHA_LIST"
-  EXPECTED="$(grep -F "$MARIADB_FILENAME" "$SHA_LIST" | awk '{print $1}' | head -n1 || true)"
+# 3.1 Download ZIP (fail fast on 404)
+HTTP_CODE=$(curl -w '%{http_code}' -fsSL "${MARIADB_BASEURL}${MARIADB_FILENAME}" -o "$ZIP_PATH" || true)
+if [ "$HTTP_CODE" != "200" ]; then
+  die "MariaDB ZIP nicht gefunden (${HTTP_CODE}): ${MARIADB_BASEURL}${MARIADB_FILENAME}"
 fi
-[ -n "$EXPECTED" ] || die "Konnte erwartete SHA256 nicht ermitteln."
 
-ACTUAL="$(sha256sum "$ZIP_PATH" | awk '{print $1}')"
-if [ "${EXPECTED^^}" != "${ACTUAL^^}" ]; then
-  die "MariaDB ZIP SHA256 mismatch! expected=$EXPECTED actual=$ACTUAL"
+# 3.2 Checksum aus md5sums.txt prüfen
+HTTP_CODE_MD5=$(curl -w '%{http_code}' -fsSL "${MARIADB_BASEURL}md5sums.txt" -o "$MD5_LIST" || true)
+if [ "$HTTP_CODE_MD5" != "200" ]; then
+  die "md5sums.txt nicht abrufbar (${HTTP_CODE_MD5}) von ${MARIADB_BASEURL}"
 fi
-info "SHA256 OK"
 
-# Entpacken nach BundleRoot/db/mariadb
+EXPECTED_MD5="$(grep -F " ${MARIADB_FILENAME}" "$MD5_LIST" | awk '{print $1}')"
+[ -n "$EXPECTED_MD5" ] || die "md5sums.txt enthält keinen Eintrag für ${MARIADB_FILENAME}"
+ACTUAL_MD5="$(md5sum "$ZIP_PATH" | awk '{print $1}')"
+if [ "${EXPECTED_MD5,,}" != "${ACTUAL_MD5,,}" ]; then
+  die "MD5 mismatch für ${MARIADB_FILENAME}! expected=${EXPECTED_MD5} actual=${ACTUAL_MD5}"
+fi
+info "MD5 OK"
+
+# 3.3 Entpacken nach BundleRoot/db/mariadb
 UNZIP_DIR="$(mktemp -d)"
 unzip -q "$ZIP_PATH" -d "$UNZIP_DIR"
-# Falls eine zusaetzliche Wurzelmappe existiert, Inhalte herausheben
+
+# Falls der ZIP eine Wurzelmappe enthält, Inhalte herausheben
 if [ "$(find "$UNZIP_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 1 ]; then
   ROOT_SUB="$(find "$UNZIP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n1)"
   cp -R "$ROOT_SUB"/. "$BUNDLE_ROOT/db/mariadb/"
@@ -200,10 +209,35 @@ else
   cp -R "$UNZIP_DIR"/. "$BUNDLE_ROOT/db/mariadb/"
 fi
 
-# Minimal-Check
-if [ ! -f "$BUNDLE_ROOT/db/mariadb/bin/mysql.exe" ]; then
-  die "MariaDB-Binaries fehlen (mysql.exe)."
+# 3.4 Minimal- und Share-Check (Windows Layout)
+REQ1="$BUNDLE_ROOT/db/mariadb/bin/mysql.exe"
+REQ2_A="$BUNDLE_ROOT/db/mariadb/bin/mysqld.exe"
+REQ2_B="$BUNDLE_ROOT/db/mariadb/bin/mariadbd.exe"
+REQ_LANG="$BUNDLE_ROOT/db/mariadb/share/english/errmsg.sys"
+REQ_FLAT="$BUNDLE_ROOT/db/mariadb/share/errmsg.sys"
+
+[ -f "$REQ1" ] || die "MariaDB-Binary fehlt: $(basename "$REQ1")"
+if [ ! -f "$REQ2_A" ] && [ ! -f "$REQ2_B" ]; then
+  die "MariaDB-Server-Binary fehlt: weder mysqld.exe noch mariadbd.exe"
 fi
+
+# Akzeptiere die übliche Windows-Struktur: share/english/errmsg.sys
+if [ -f "$REQ_LANG" ]; then
+  info "Gefunden: share/english/errmsg.sys"
+  # optionaler Komfort: zusätzlich eine flache Kopie ablegen,
+  # falls spätere Tools hart share/errmsg.sys erwarten
+  if [ ! -f "$REQ_FLAT" ]; then
+    cp "$REQ_LANG" "$REQ_FLAT"
+  fi
+elif [ -f "$REQ_FLAT" ]; then
+  info "Gefunden: share/errmsg.sys"
+else
+  die "MariaDB 'errmsg.sys' fehlt – weder share/english/errmsg.sys noch share/errmsg.sys vorhanden!"
+fi
+
+info "MariaDB entpackt und verifiziert."
+
+info "MariaDB entpackt und verifiziert."
 
 # 4) my.ini generieren (falls nicht vorhanden)
 MYINI="$BUNDLE_ROOT/db/my.ini"
